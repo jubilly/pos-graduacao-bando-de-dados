@@ -1,0 +1,38 @@
+[
+	{
+		"tombo" : 1,
+		"nome" : "Data Show",
+		"status" : "disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	},
+	{
+		"tombo" : 2,
+		"nome" : "Lousa Digital",
+		"status" : "disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	},
+	{
+		"tombo" : 3,
+		"nome" : "Microfone",
+		"status" : "disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	},
+	{
+		"tombo" : 4,
+		"nome" : "Caixa de Som",
+		"status" : "não disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	},
+	{
+		"tombo" : 5,
+		"nome" : "Quadro Branco",
+		"status" : "não disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	},
+	{
+		"tombo" : 6,
+		"nome" : "Notebook",
+		"status" : "disponível",
+		"dataHoraAtualizacaoStatus" : "2024-11-23 15:36:07"
+	}
+]

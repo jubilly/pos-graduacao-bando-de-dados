@@ -1,0 +1,14 @@
+[
+	{
+		"_id" : 1,
+		"nome" : "Pablo Freire Matos",
+		"login" : "pablo",
+		"senha" : "matos"
+	},
+	{
+		"_id" : 2,
+		"nome" : "Liojes de Oliveira Carneiro",
+		"login" : "Liojes",
+		"senha" : "Carneiro"
+	}
+]
