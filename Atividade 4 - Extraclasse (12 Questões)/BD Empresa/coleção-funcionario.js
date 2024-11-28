@@ -3,7 +3,7 @@
 // ======================
 
 // Cria o banco de dados empresa
-use empresa
+use ('empresa2');
 
 // Exclui banco de dados selecionado
 // db.dropDatabase();
@@ -437,13 +437,6 @@ db.funcionario.insertOne({
 	],
 	"avaliacoes" : [100, 73, 79]
 });
-
-// Mostra as coleções criadas
-show collections
-
-// Mostra todos os banco de dados criados
-// show dbs
-show databases
 
 // Mostra os campos do terceiro documento da coleção
 var colunas = db.funcionario.findOne({_id:3});

@@ -4,217 +4,321 @@
     Aluna: Amanda Prates Caetano
     Disciplina: Banco de dados
 
+    1. Utilizar a base de dados Empresa disponível no Google Classroom para responder as questões; 
+    2. Utilize o método aggregate() para realizar as consultas a seguir. 
+    Elaborar as seguintes consultas no MongoDB: 
+    
+    Questão com $match e $project SEM agrupamento
+
 */
 
 // Respostas abaixo
 
-// Questão 1 - Quais os funcionários não possuem nenhuma skill?
+// Questão 1 - Quais os funcionários do departamento 2 recebem salário entre R$ 2.000,00 e R$ 3.000,00? Mostrar o nome, 
+// o departamento e o salário do funcionário.
 
 use('empresa');
 
-db.funcionario.find({
-    $or: [
-      {
-        "skill": {
-          $exists: false,
-        },
-      },
-      { "skill": "" },
-      { "skill": { $exists: null } },
-    ],
-});
-
-
-// Questão 2 - Quais os funcionários possuem algum hobby? Mostrar o nome e o hobby.
-
-db.funcionario.find({
-    $or: [
-      {
-        "hobbies": {
-          $exists: true,
-          $ne: []
-        },
+db.funcionario.aggregate([
+    {
+      $match: {
+        depto: 2,
+        salario: { $gte: 2000, $lte: 3000 }
       }
-    ],
-});
-
-// Questão 3 - Seleciona os funcionários que não é vendedor, não mora em Vitória da Conquista e tem menos de 3 filhos. 
-// Não mostrar os hobbies, as notas e as avaliações. 
-
-db.funcionario.find(
-    {
-        "funcao": { $ne: "VENDEDOR" },
-        "endereco.cidade": { $ne: "VITÓRIA DA CONQUISTA" },
-        "filhos": { $gte: 3 },
     },
     {
-        "hobbies": 0,
-        "notas": 0,
-        "avaliacoes": 0
+      $project: {
+        _id: 0,
+        nome: 1,
+        depto: 1,
+        salario: 1
+      }
     }
-);
+]);
 
-// Questão 4 - Seleciona os funcionários com função de programador e de analista que ganham acima de R$ 2.000,00. 
-// Classificar em ordem crescente pela função e nome do funcionário. Utilizar o operador sort. 
 
-db.funcionario.find(
+// Questão 2 - Quais funcionários foram admitidos no primeiro semestre depois de 2008? Mostrar o nome e o ano da data 
+// de admissão do funcionário. Classificar os funcionários por data de admissão em ordem decrescente. Utilize 
+// os  operadores  de  expressão  $year  e  $month  para  saber,  respectivamente,  o  ano  e  o  mês  da  data  de 
+// admissão
+
+db.funcionario.aggregate([
     {
-        "funcao": {
-            $in: [
-                "PROGRAMADOR",
-                "ANALISTA"
+      $project: {
+        _id: 0,
+        nome: 1,
+        admissao: 1,
+        admissionYear: { $year: "$admissao" },
+        admissionMonth: { $month: "$admissao" }
+      }
+    },
+    {
+      $match: {
+        admissionYear: { $gt: 2008 },
+        admissionMonth: { $lte: 6 },
+      }
+    },
+    {
+      $project: {
+        nome: 1,
+        admissao: {
+          $toDate: "$admissao"
+        }
+      }
+    },
+    {
+      $sort: {
+        "admissao": -1 
+      }
+    }
+  
+]);
+
+// Questões de $push, $addToSet e $size com o operador $group 
+// 3. Quais os nomes dos funcionários por função? Mostrar somente os funcionários cuja função seja programador 
+// e analista. Utilizar o operador $push.
+
+db.funcionario.aggregate([
+    {
+        $match: {
+            funcao: { $in: ['PROGRAMADOR', 'ANALISTA']}
+        }
+    },
+    {
+        $group: {
+            _id: "$funcao",
+            funcionarios: { 
+                $push: "$nome"
+            }
+        }
+    }
+]);
+
+// Questão 4 -  Quais os nomes dos funcionários alocados por cidade?  Utilizar a notação ponto para acessar a cidade e  o 
+// operador $push
+
+db.funcionario.aggregate([
+    {
+        $match: {
+            "endereco.cidade": { $exists: true }
+        }
+    },
+    {
+        $group: {
+            _id: "$endereco.cidade",
+            funcionarios: { 
+                $push: "$nome"
+            }
+        }
+    }
+]);
+
+// Questão 5 - Qual a quantidade de funções por cada departamento? Contar as funções repetidas no departamento. Utilizar 
+// os operadores $push e $size (ou $sum).
+
+
+db.funcionario.aggregate([
+    {
+        $group: {
+            _id: "$depto",
+            funcoes: {
+                $push: {
+                    funcao: "$funcao"
+                }
+            }
+        }
+    },
+    {
+        $project: {
+            _id: 1,
+            quantidadeFuncoes: { $size: "$funcoes" }
+        }
+    }
+]);
+
+// Questão 6 - Qual a quantidade de funções por cada departamento? Não contar as funções repetidas no departamento. 
+// Utilizar os operadores $addToSet e $size.
+
+
+db.funcionario.aggregate([
+    {
+        $group: {
+            _id: "$depto",
+            funcoes: {
+                $addToSet: "$funcao" 
+            }
+        }
+    },
+    {
+        $project: {
+            _id: 1,
+            quantidadeFuncoes: { $size: "$funcoes" }
+        }
+    }
+]);
+
+// Questão 7 - Qual  o  total  de  feedbacks  por  funcionário?  Mostrar  o  nome  do  funcionário  e  o  total  de  feedbacks  dos  5 
+//funcionários com maiores feedbacks. Utilizar os operadores $exists, $size, $sort e $limit
+
+db.funcionario.aggregate([
+    {
+        $match: {
+            "feedbacks": { $exists: true }
+        }
+    },
+    {
+        $project: {
+          nome: 1,
+          total_feedbacks: { 
+            $size: "$feedbacks"
+          }
+        }
+    },
+    {
+        $sort: {
+          total_feedbacks: -1 
+        }
+    },
+
+]);
+
+
+// Questões $min, $max, $avg, $sum com o operador $group 
+// Questão 8 - Qual a data de admissão do funcionário mais antigo e o mais recente, cuja função é supervisor? 
+
+db.funcionario.aggregate([
+    {
+        $match: {
+            "funcao": { $exists: true },
+            "funcao": "SUPERVISOR"
+        }
+    },
+    {
+        $group: {
+            _id: null,
+            antigo: { $min: "$admissao" },
+            recente: { $max: "$admissao" }
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            antigo: 1,
+            recente: 1
+        }
+    }
+]);
+
+// Questão 9 - Qual a média de filhos dos funcionários da empresa por função? Utilizar o operador $exists.
+
+db.funcionario.aggregate([
+    {
+        $match: {
+            "filhos": { $exists: true }
+        }
+    },
+    {
+        $group: {
+            _id: "$funcao",
+            media: { 
+                $avg: "$filhos" 
+            }
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            funcao: "$_id",
+            media: 1
+        }
+    }
+
+]);
+
+// Questão 10 - Qual o valor total de salário pago aos funcionários que recebem salário entre R$ 2.000,00 e R$ 3.000,00 de 
+// acordo com a função? Utilizar o operador $and. 
+
+db.funcionario.aggregate([
+    {
+      $match: {
+        $and: [
+          { salario: { $gte: 2000 } },
+          { salario: { $lte: 3000 } }
+        ]
+      }
+    },
+    {
+      $project: {
+        nome: 1,
+        salario: 1,
+        funcao: 1
+      }
+    },
+    {
+      $group: {
+        _id: "$funcao",
+        total_salario: { $sum: "$salario" }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        funcao: "$_id",
+        total_salario: 1
+      }
+    }
+]);
+
+
+// Questão 11 - Qual o valor total de salário pago aos funcionários de acordo com a função? Mostrar somente as funções as 
+// quais possuem o total de salário entre R$ 2.000,00 e R$ 3.000,00. Utilizar o operador $and 
+
+db.funcionario.aggregate([
+    {
+        $group: {
+            _id: "$funcao",
+            total_salario: { $sum: "$salario" }
+        }
+    },
+    {
+        $match: {
+            $and: [
+                { total_salario: { $gte: 2000 } },
+                { total_salario: { $lte: 3000 } }
             ]
-        },
-        "salario": { $gte: 2000 },
-    }
-).sort({ "nome": 1 });
-
-// Questão 5 - Quais os funcionários têm como hobby futebol e tênis de mesa? Não mostrar o salário e a data de admissão. 
-// Utilizar o operador $all. 
-
-db.funcionario.find(
-    {
-        "hobbies": { 
-            $all: ['TÊNIS DE MESA', 'FUTEBOL']
         }
     },
     {
-        "salario": 0,
-        "admissao": 0
-    }
-);
-
-// Questão 6 - Quais os funcionários têm 4 hobbies, sendo que pelo menos 1 hobby seja natação? Mostrar o nome e os 
-// hobbies. Utilizar o operador $size.
-
-db.funcionario.find(
-    {
-        $and: [
-            {
-                "hobbies": { 
-                    $size: 4
-                }
-            },
-            {
-                "hobbies": "NATAÇÃO"
-            }
-        ]
-    }
-)
-
-// Questão 7 - Quantos funcionários moram em Vitória da Conquista e possuem algum hobby? Utilizar a notação ponto. 
-
-db.funcionario.find({
-    $and: [
-        {
-            "hobbies": { 
-                $exists: true
-            }
-        },
-        {
-            "endereco.cidade": "VITÓRIA DA CONQUISTA"
+        $project: {
+            _id: 0,
+            funcao: "$_id",
+            total_salario: 1
         }
-    ]
-});
-
-
-// Questão 8 - Quais  os  funcionários  com  notas  de  produção  e convívio acima  de  7,5?  Mostrar  o  nome,  a  função e  as 
-// notas. Utilizar a notação ponto.
-
-db.funcionario.find(
-    {
-        $and: [
-            {
-                "notas.0.criterio" : "PRODUÇÃO",
-                "notas.0.nota": { $gt: 7.5 }
-            },
-            {
-                "notas.1.criterio" : "CONVÍVIO",
-                "notas.1.nota": { $gt: 7.5 }
-            }
-        ]
-    }, 
-    {
-        "nome": 1, 
-        "funcao": 1, 
-        "notas": 1, 
-        "_id": 0
     }
-);
+]);
 
-// Questão 9 - Responder a consulta anterior com o operador $elemMatch. 
+// Questão $unwind com o operador $group 
+// Questão 12 - Qual  a  quantidade  de  ocorrência  de  cada  hobby?  Ordenar  em  ordem  decrescente  pela  quantidade  com  o 
+// operador $sort. Utilizar o operador $unwind para desmembrar o array. Mostrar somente os 3 primeiros 
+// documentos com o operador $limit.
 
-
-db.funcionario.find(
+db.funcionario.aggregate([
     {
-        $and: [
-            {
-                "notas": {
-                    $elemMatch: {
-                        "criterio": "PRODUÇÃO",
-                        "nota": { $gte: 7.5 }
-                    }
-                }
-            },
-            {
-                "notas": {
-                    $elemMatch: {
-                        "criterio": "CONVÍVIO",
-                        "nota": { $gte: 7.5 }
-                    }
-                }
-            }
-        ]
+      $unwind: "$hobbies"
     },
     {
-        "nome": 1, 
-        "funcao": 1, 
-        "notas": 1, 
-        "_id": 0
-    }
-);
-
-// Questão 10 - Qual  a  primeira  opção  de  hobby  dos  funcionários?  Considerar  que  o  primeiro  elemento  do  array  é  a 
-// primeira opção. Mostrar somente o nome e o hobby. Utilizar o operador $slice. 
-
-db.funcionario.find(
-    {},
-    {
-        "_id": 0,
-        "nome": 1,
-        "hobbies": { $slice: 1 }
-    }
-);
-
-// Questão 11 - Quais  os  funcionários  têm  3  ou  4  feedbacks?  Mostrar  o  nome  e  os  feedbacks  ordenado  em  ordem 
-// decrescente pelo nome. 
-
-db.funcionario.find(
-    {
-        $or: [
-            {
-                "feedbacks": { $size: 3 },
-            },
-            {
-                "feedbacks": { $size: 4 },
-            },
-        ]
+      $group: {
+        _id: "$hobbies", 
+        qtd: { $sum: 1 }
+      }
     },
     {
-        "nome": 1,
-        "feedbacks": 1,
-        "_id": 0
+      $sort: {
+        qtd: -1
+      }
+    },
+    {
+      $limit: 3
     }
-).sort({ "nome": -1 });
-
-// Questão 12 - Recuperar  os  funcionários  que  possuem  os  três  maiores  salários,  excluindo  o  funcionário  com  o  maior 
-// salário. Não mostrar os hobbies, as notas, as avaliações, os feedbacks e o endereço.
-
-
-db.funcionario.find({}, {
-    "hobbies": 0,
-    "notas": 0,
-    "avaliacoes": 0,
-    "feedbacks": 0,
-    "endereco": 0
-}).sort({ "salario": -1 }).skip(1).limit(3);
+]);
+  
